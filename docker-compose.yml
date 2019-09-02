@@ -1,0 +1,56 @@
+version: '3'
+ 
+services:  
+  app:
+    build: 
+      context: .
+      dockerfile: ./php-fpm/Dockerfile
+    restart: unless-stopped
+    container_name: app
+    volumes:      
+      - "./api:/var/www/api:cached"
+    networks:
+      - ticket-network
+  web:
+    build: 
+      context: .
+      dockerfile: ./nginx/Dockerfile
+    restart: unless-stopped
+    container_name: web
+    ports:
+      - "80:80"
+    volumes:      
+      - "./web:/var/www/html:cached"
+      - "./api:/var/www/api:cached"
+      - "./nginx/ticket.conf:/etc/nginx/conf.d/default.conf"
+    working_dir: /var/www/html
+    links:
+      - app
+    networks:
+      - ticket-network
+  db:
+    image: mysql:5.7.22
+    container_name: db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ticket
+      MYSQL_USER: ticket
+      MYSQL_ROOT_PASSWORD: admin@123
+      MYSQL_PASSWORD: ticket@123
+    volumes:
+      - dbdata:/var/lib/mysql/
+      - ./db/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - ticket-network    
+networks:
+  ticket-network:
+    driver: bridge
+volumes:
+  dbdata:
+    driver: local
+  
+
+      
